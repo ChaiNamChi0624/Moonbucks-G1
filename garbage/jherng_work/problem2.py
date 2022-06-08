@@ -29,7 +29,7 @@ def get_local_stores(df, country_code=None, country_name=None):
         raise Exception("Please enter either country_code or country_name.")
     return local_df
 
-def select_distribution_center(local_stores, route_func):
+def select_distribution_center(local_stores):
     """
     Return 
     - center_idx: index of distribution center in local_store dataframe
