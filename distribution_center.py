@@ -26,12 +26,12 @@ class DistributionCenter:
     def solve(self, method="held-karp"):
         distance_mat = self.__build_distance_matrix()
         self.center_idx = self.__find_center()
-        self.cost, path = self.__solve_tsp(distance_mat, method)
+        geodesic_cost, path = self.__solve_tsp(distance_mat, method)
 
         start_from = path.index(self.center_idx)
         self.delivery_route = path[start_from:] + path[0 : start_from + 1]
-
-        self.folium_map = self.__build_map(distance_mat)
+        path_dict, self.cost = self.__fetch_delivery_routes_info(distance_mat)
+        self.folium_map = self.__build_map(distance_mat, path_dict)
 
     def plot(self):
         return self.folium_map
@@ -79,13 +79,14 @@ class DistributionCenter:
 
         return center_idx
 
-    def __fetch_delivery_routes(self, distance_mat):
+    def __fetch_delivery_routes_info(self, distance_mat):
         with open("./mapbox_api_key.txt") as f:
             api_key = f.readline()
         os.environ["MAPBOX_ACCESS_TOKEN"] = api_key
         service = Directions()
 
         path_dict = OrderedDict()
+        delivery_cost = 0   # x1 for driving route, x2 for geodesic distance
 
         for i in range(len(self.delivery_route)):
             if i == len(self.delivery_route) - 1:
@@ -114,27 +115,32 @@ class DistributionCenter:
 
             if response_json["code"] == "NoRoute":
                 warnings.warn("No route found, use geodesic distance")
-                cur_dist = distance_mat[origin_idx][dest_idx]
+                cur_geodesic_dist = distance_mat[origin_idx][dest_idx]
                 path_dict[(origin_idx, dest_idx)] = {
-                    "distance": cur_dist,
+                    "driving_distance": None,
+                    "geodesic_distance": cur_geodesic_dist,
                     "duration": None,
                     "path": None,
                     "code": "NoRoute",
                 }
+                delivery_cost += cur_geodesic_dist * 2
             else:
-                cur_dist = response_json["routes"][0]["distance"] / 1000  # km
+                cur_driving_dist = response_json["routes"][0]["distance"] / 1000  # km
                 cur_path = response_json["routes"][0]["geometry"]  # polyline string
                 cur_dur = response_json["routes"][0]["duration"] / 60  # minutes
+                cur_geodesic_dist = distance_mat[origin_idx][dest_idx]
                 path_dict[(origin_idx, dest_idx)] = {
-                    "distance": cur_dist,
+                    "driving_distance": cur_driving_dist,
+                    "geodesic_distance": cur_geodesic_dist,
                     "duration": cur_dur,
                     "path": cur_path,
                     "code": "Ok",
                 }
+                delivery_cost += cur_driving_dist * 1
 
-        return path_dict
+        return path_dict, delivery_cost
 
-    def __build_map(self, distance_mat):
+    def __build_map(self, distance_mat, path_dict):
         def construct_address(store_info):
             address = ""
             for i, key in enumerate(("street_address", "zip_code", "city", "country")):
@@ -172,6 +178,7 @@ class DistributionCenter:
                 <h3>{storename}</h3>
                 <hr>
                 <p><b>Address</b> : {address}</p>
+                <p><b>LatLong</b> : ({store_info["latitude"]}, {store_info["longitude"]})</p>
                 <table>
                     <tr><th>Opening Hours</th></tr>
                     {"".join(f"<tr><td>{day}</td><td>{openhours[day]}</td></tr>" for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] if day in openhours) if openhours != None else f"<tr><td>{'Not available'}</td><td></td></tr>"}
@@ -225,17 +232,16 @@ class DistributionCenter:
                     icon=folium.Icon(color="green", icon="home", prefix="glyphicon"),
                 ).add_to(folium_map)
 
-        path_dict = self.__fetch_delivery_routes(distance_mat)
-
         for idx, key in enumerate(path_dict):
             origin_idx, dest_idx = key
             if path_dict[key]["code"] == "NoRoute":
-                cur_distance = path_dict[key]["distance"]
+                cur_geodesic_distance = path_dict[key]["geodesic_distance"]
 
                 path_popup = f"""
-                    <h5>From : <i><u>{self.local_store_df.iloc[origin_idx]["name"]}</u></i> <br>To : <i><u>{self.local_store_df.iloc[dest_idx]["name"]}</u></i></h5>
+                    <h5>From : <i><u>{self.local_store_df.iloc[origin_idx]["name"]}</u>&nbsp;<small>({self.local_store_df.iloc[origin_idx]["latitude"]}, {self.local_store_df.iloc[origin_idx]["longitude"]})</small></i> <br>To : <i><u>{self.local_store_df.iloc[dest_idx]["name"]}</u>&nbsp;<small>({self.local_store_df.iloc[dest_idx]["latitude"]}, {self.local_store_df.iloc[dest_idx]["longitude"]})</small></i></h5>
                     <p style='color: red'><b>No driving route found, geodesic distance is used</b></p>
-                    <b>Distance : </b> {round(cur_distance, 2)} km <br>
+                    <b>Driving distance : </b> - <br> 
+                    <b>Geodesic distance : </b> {round(cur_geodesic_distance, 2)} km &nbsp;<small>(geodesic_dist × 2 is applied to cost)</small><br> 
                     <b>Duration : </b> -
                 """
                 latlong_origin = (
@@ -247,14 +253,17 @@ class DistributionCenter:
                     self.local_store_df.iloc[dest_idx]["longitude"],
                 )
 
+                fg = folium.FeatureGroup(name=f"{idx + 1} : {self.local_store_df.iloc[origin_idx]['name']} → {self.local_store_df.iloc[dest_idx]['name']}")
                 folium.PolyLine(
                     [latlong_origin, latlong_dest],
-                    color="green",
-                    name=f"{idx + 1} : {self.local_store_df.iloc[origin_idx]['name']} → {self.local_store_df.iloc[dest_idx]['name']}",
-                ).add_child(folium.Popup(path_popup, max_width=300)).add_to(folium_map)
+                    color="green", weight="4", dash_array="10"
+                ).add_child(folium.Popup(path_popup, max_width=400)).add_to(fg)
+                fg.add_to(folium_map)
+
             else:
                 cur_duration = path_dict[key]["duration"]
-                cur_distance = path_dict[key]["distance"]
+                cur_driving_distance = path_dict[key]["driving_distance"]
+                cur_geodesic_distance = path_dict[key]["geodesic_distance"]
                 cur_path_coords = polyline.decode(path_dict[key]["path"], geojson=True)
                 cur_path_geojson = {
                     "type": "LineString",
@@ -262,15 +271,17 @@ class DistributionCenter:
                 }
 
                 path_popup = f"""
-                    <h5>From : <i><u>{self.local_store_df.iloc[origin_idx]["name"]}</u></i> <br>To : <i><u>{self.local_store_df.iloc[dest_idx]["name"]}</u></i></h5>
-                    <b>Distance : </b> {round(cur_distance, 2)} km <br>
+                    <h5>From : <i><u>{self.local_store_df.iloc[origin_idx]["name"]}</u>&nbsp;<small>({self.local_store_df.iloc[origin_idx]["latitude"]}, {self.local_store_df.iloc[origin_idx]["longitude"]})</small></i> <br>To : <i><u>{self.local_store_df.iloc[dest_idx]["name"]}</u>&nbsp;<small>({self.local_store_df.iloc[dest_idx]["latitude"]}, {self.local_store_df.iloc[dest_idx]["longitude"]})</small></i></h5>
+                    <b>Driving distance : </b> {round(cur_driving_distance, 2)} km &nbsp;<small>(driving_dist × 1 is applied to cost)</small><br>
+                    <b>Geodesic distance : </b> {round(cur_geodesic_distance, 2)} km <br>
                     <b>Duration : </b> {round(cur_duration, 2)} minutes
                 """
                 folium.GeoJson(
                     cur_path_geojson,
-                    style_function=lambda x: {"color": "green"},
+                    style_function=lambda x: {"color": "green", "weight": 4},
+                    highlight_function=lambda x: {"fillColor": "#c30010", "color": "#c30010", "fillOpacity": 1, "weight": 4},
                     name=f"{idx + 1} : {self.local_store_df.iloc[origin_idx]['name']} → {self.local_store_df.iloc[dest_idx]['name']}",
-                ).add_child(folium.Popup(path_popup, max_width=300)).add_to(folium_map)
+                ).add_child(folium.Popup(path_popup, max_width=400)).add_to(folium_map)
 
         folium.LayerControl().add_to(folium_map)
         return folium_map
