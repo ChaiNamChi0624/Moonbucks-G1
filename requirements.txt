@@ -1,4 +1,0 @@
-mapbox
-os
-folium
-python 3.9
