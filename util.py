@@ -17,11 +17,19 @@ def get_country_dict(df):
         countries[code] = {"name": name, "n_stores": len(df.loc[df["country_code"] == code])}
     return countries
 
-def get_local_stores(df, country_code=None, country_name=None):
+def get_local_stores(df, country_code=None, country_name=None, sample_size=None):
     if country_code != None:
         local_df = df.loc[df["country_code"] == country_code].reset_index(drop=True)
     elif country_name != None:
         local_df = df.loc[df["country"] == country_name].reset_index(drop=True)
     else:
         raise Exception("Please enter either country_code or country_name.")
-    return local_df
+
+    # if sample_size is not set or sample_size > number of rows in df, return all rows in the df
+    if sample_size == None or sample_size > len(local_df):
+        return local_df
+    elif sample_size <= len(local_df):
+        # if sample_size is less than number of rows in df, 
+        # randomly pick sample_size number of rows from df and return the new df
+        local_df = local_df.sample(n=sample_size).reset_index(drop=True)
+        return local_df
