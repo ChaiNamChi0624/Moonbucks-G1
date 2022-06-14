@@ -1,4 +1,3 @@
-from turtle import distance
 from geopy import distance as geopy_dist
 from util import load_dataset, get_local_stores
 from algorithms import held_karp_tsp, nearest_center, nearest_neighbour_tsp
