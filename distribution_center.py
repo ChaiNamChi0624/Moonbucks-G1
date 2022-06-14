@@ -15,10 +15,10 @@ from collections import OrderedDict
 
 
 class DistributionCenter:
-    def __init__(self, country_code=None, country_name=None):
+    def __init__(self, country_code=None, country_name=None, sample_size=100):
         df = load_dataset()
         self.local_store_df = get_local_stores(
-            df, country_code=country_code, country_name=country_name
+            df, country_code=country_code, country_name=country_name, sample_size=sample_size
         )
         self.cost = None
         self.delivery_route = None
