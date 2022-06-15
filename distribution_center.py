@@ -12,7 +12,6 @@ from mapbox import Directions
 from collections import OrderedDict
 
 
-
 class DistributionCenter:
     def __init__(self, country_code=None, country_name=None, sample_size=100):
         df = load_dataset()

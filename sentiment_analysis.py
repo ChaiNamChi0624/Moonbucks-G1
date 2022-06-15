@@ -67,7 +67,14 @@ def compute_sentiment(word_list, country_code):
         pos = open("./content/Positive.txt", encoding="utf8")
         pos = pos.read().splitlines()
         
-        # O(len(word_list) * len(pos) * n)
+        # O(len(word_list) * len(pos) * time_complexity_KMP)
+        # worst-case: 
+        # - intended pattern is at the last of the list / 
+        # - no repetitiveness in text or pattern , e.g., abcdef, instead of e.g., ababcabc
+        # best-case: 
+        # - intended pattern is at the front of the list / 
+        # - e.g., ababcabc
+
         pos_count = 0
         for x in range(len(word_list)):
             for y in range(len(pos)):
@@ -97,14 +104,7 @@ def compute_sentiment(word_list, country_code):
         return neu_per, neu_count
 
     sentiment_info = {}
-    # {
-    #   "country_code": "AE"  
-    #   "pos_per": pos_per,
-    #   "neg_per": neg_per,
-    #   "neu_per": neu_per,
-    #   "overall": "negative"
-    #   "score": 0.3
-    # }
+    
     pos_per, pos_count = positive(word_list)
     neg_per, neg_count = negative(word_list)
     neu_per, neu_count = neutral(word_list, pos_count, neg_count)

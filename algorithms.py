@@ -1,7 +1,10 @@
 import itertools
 from geopy import distance as geopy_dist
 
-def held_karp_tsp(distance_mat):
+def held_karp_tsp(distance_mat): 
+    # O(n^2 * 2^n)
+    # Worst case scenario: more than ~15 stores, time complexity will be 'super' exponentially large
+    # Best case scenario: under 15
     """
     Implementation of Held-Karp, an algorithm that solves the Traveling
     Salesman Problem using dynamic programming with memoization.
@@ -63,7 +66,10 @@ def held_karp_tsp(distance_mat):
 
     return opt, list(reversed(path))
 
-def nearest_neighbour_tsp(distance_mat, center_idx):
+def nearest_neighbour_tsp(distance_mat, center_idx): 
+    # O(n^2)
+    # worst-case scenario: no
+    # best-case scenario: no
     
     def nextStore(current_idx, visited, distance_mat):
         min_idx = -1
@@ -97,7 +103,11 @@ def nearest_neighbour_tsp(distance_mat, center_idx):
     
     return cost, path
 
-def nearest_center(coordinates):
+def nearest_center(coordinates): 
+    # O(n)
+    # worst-case scenario: no
+    # best-case scenario: no
+
     n = len(coordinates)
 
     center = [0, 0]
@@ -119,6 +129,9 @@ def nearest_center(coordinates):
 
 
 def KMPSearch(pat, txt):
+    # O(n)
+    # worst-case scenario: no repetitiveness in text or pattern , e.g., abcdef, instead of e.g., ababcabc
+    # best-case scenario: e.g., ababcabc
     def computeLPSArray(pat, M, lps):
         len = 0  # length of the previous longest prefix suffix
 
