@@ -8,7 +8,7 @@ from nltk.tokenize import RegexpTokenizer
 from wordcloud import WordCloud
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-from algorithms import KMPSearch
+from algorithms import Trie
 
 nltk.download('stopwords', quiet=True)
 nltk.download('vader_lexicon', quiet=True)
@@ -66,21 +66,18 @@ def compute_sentiment(word_list, country_code):
     def positive(word_list):
         pos = open("./content/Positive.txt", encoding="utf8")
         pos = pos.read().splitlines()
-        
-        # O(len(word_list) * len(pos) * time_complexity_KMP)
-        # worst-case: 
-        # - intended pattern is at the last of the list / 
-        # - no repetitiveness in text or pattern , e.g., abcdef, instead of e.g., ababcabc
-        # best-case: 
-        # - intended pattern is at the front of the list / 
-        # - e.g., ababcabc
 
+        pos_trie = Trie()
+        
+        # Build Trie by inserting all positive words into Trie as the pattern
+        for pos_word in pos:
+            pos_trie.insertString(pos_word)
+
+        # Search for the existence of filtered word in the Trie
         pos_count = 0
-        for x in range(len(word_list)):
-            for y in range(len(pos)):
-                pos[y] == word_list[x]
-                pos_count = pos_count + KMPSearch(pat=pos[y], text=word_list[x])[0]
-                
+        for filtered_word in word_list:
+            pos_count += pos_trie.searchString(filtered_word)
+
         pos_per = (pos_count/(len(word_list))*100)
         
         return pos_per, pos_count
@@ -89,10 +86,16 @@ def compute_sentiment(word_list, country_code):
         neg = open("./content/Negative.txt", encoding="utf8")
         neg = neg.read().splitlines()
         
+        neg_trie = Trie()
+        
+        # Build Trie by inserting all negative words into Trie as the pattern
+        for neg_word in neg:
+            neg_trie.insertString(neg_word)
+
+        # Search for the existence of filtered word in the Trie
         neg_count = 0
-        for x in range(len(word_list)):
-            for y in range(len(neg)):
-                neg_count = neg_count + KMPSearch(neg[y], word_list[x])[0]
+        for filtered_word in word_list:
+            neg_count += neg_trie.searchString(filtered_word)
                 
         neg_per = (neg_count/(len(word_list))*100)
         
