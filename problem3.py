@@ -50,6 +50,10 @@ def score(sent, dist, total_dist, weight_sent=0.75, weight_dist=0.25):
     if weight_dist + weight_sent != 1:
         raise Exception("weight_sent and weight_dist must sum up to 1")
 
+    # 0.75 * sent + 0.25 * (1 - (dis / total_dist))
+    # sent (higher better)
+    # dis (lower better), 1 - (dis / total_dist) (higher better)
+    # score (higher better)
     score = weight_sent * sent + weight_dist * (1 - (dist / total_dist))
     
     return score

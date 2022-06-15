@@ -24,12 +24,12 @@ class DistributionCenter:
         self.center_idx = None
         self.folium_map = None
 
-    def solve(self, method="held-karp"):
-        distance_mat = self.__build_distance_matrix()
+    def solve(self, method="nearest-neighbour"):
+        distance_mat = self.__build_distance_matrix() # O(n^2)
         self.center_idx = self.__find_center()
         geodesic_cost, path = self.__solve_tsp(distance_mat, method)
-
-        start_from = path.index(self.center_idx)
+        
+        start_from = path.index(self.center_idx) # [0, 1, 2, 3, 4, 0] -> [2, 3, 4, 0, 1, 2]
         self.delivery_route = path[start_from:] + path[0 : start_from + 1]
         path_dict, self.cost = self.__fetch_delivery_routes_info(distance_mat)
         self.folium_map = self.__build_map(distance_mat, path_dict)

@@ -67,10 +67,12 @@ def compute_sentiment(word_list, country_code):
         pos = open("./content/Positive.txt", encoding="utf8")
         pos = pos.read().splitlines()
         
+        # O(len(word_list) * len(pos) * n)
         pos_count = 0
         for x in range(len(word_list)):
             for y in range(len(pos)):
-                pos_count = pos_count + KMPSearch(pos[y], word_list[x])[0]
+                pos[y] == word_list[x]
+                pos_count = pos_count + KMPSearch(pat=pos[y], text=word_list[x])[0]
                 
         pos_per = (pos_count/(len(word_list))*100)
         
@@ -95,7 +97,14 @@ def compute_sentiment(word_list, country_code):
         return neu_per, neu_count
 
     sentiment_info = {}
-    
+    # {
+    #   "country_code": "AE"  
+    #   "pos_per": pos_per,
+    #   "neg_per": neg_per,
+    #   "neu_per": neu_per,
+    #   "overall": "negative"
+    #   "score": 0.3
+    # }
     pos_per, pos_count = positive(word_list)
     neg_per, neg_count = negative(word_list)
     neu_per, neu_count = neutral(word_list, pos_count, neg_count)
