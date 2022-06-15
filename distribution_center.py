@@ -115,7 +115,7 @@ class DistributionCenter:
             response_json = response.json()
 
             if response_json["code"] == "NoRoute":
-                warnings.warn("No route found, use geodesic distance")
+                # warnings.warn("No route found, use geodesic distance")
                 cur_geodesic_dist = distance_mat[origin_idx][dest_idx]
                 path_dict[(origin_idx, dest_idx)] = {
                     "driving_distance": None,

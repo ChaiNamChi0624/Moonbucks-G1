@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import re
 import nltk
 import plotly.express as px
@@ -6,15 +7,22 @@ import matplotlib.pyplot as plt
 from nltk.tokenize import RegexpTokenizer
 from wordcloud import WordCloud
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-nltk.download('stopwords')
-nltk.download('vader_lexicon')
 
 from algorithms import KMPSearch
 
+nltk.download('stopwords', quiet=True)
+nltk.download('vader_lexicon', quiet=True)
 
-def sentimentAnalysis(country_code):
+def sentimentAnalysis(country_code, method="freq"):
     word_list, _ = article(country_code)
-    sentiment_info = compute_sentiment(word_list, country_code)
+
+    if method == "freq":
+        sentiment_info = compute_sentiment(word_list, country_code)
+    elif method == "vader":
+        sentiment_info = sentiment_scores_vader(word_list, country_code)
+    else:
+        raise Exception(f"Sentiment analysis method ({method}) doesn't exist. Please enter either \"freq\" or \"vader\".")
+    
     return sentiment_info
 
 def article(country_code):
@@ -82,28 +90,66 @@ def compute_sentiment(word_list, country_code):
         return neg_per, neg_count
 
     def neutral(word_list, pos_count, neg_count):
-        neut_count = len(word_list) - pos_count - neg_count
-        neut_per = (neut_count / (len(word_list)) * 100)
-        return neut_per, neut_count
+        neu_count = len(word_list) - pos_count - neg_count
+        neu_per = (neu_count / (len(word_list)) * 100)
+        return neu_per, neu_count
 
     sentiment_info = {}
     
     pos_per, pos_count = positive(word_list)
     neg_per, neg_count = negative(word_list)
-    neut_per, neut_count = neutral(word_list, pos_count, neg_count)
+    neu_per, neu_count = neutral(word_list, pos_count, neg_count)
     
     sentiment_info["country_code"] = country_code
     sentiment_info["pos_per"] = pos_per
     sentiment_info["neg_per"] = neg_per
-    sentiment_info["neut_per"] = neut_per
+    sentiment_info["neu_per"] = neu_per
     
     if pos_per > neg_per:
-        sentiment_info["overral"] = "positive"
+        sentiment_info["overall"] = "positive"
+    elif pos_per < neg_per:
+        sentiment_info["overall"] = "negative"
     else:
-        sentiment_info["overral"] = "negative"
+        sentiment_info["overall"] = "neutral"
     
+    sentiment_info["score"] = pos_per / (pos_per + neg_per)
+
     return sentiment_info
 
+
+def sentiment_scores_vader(word_list, country_code):
+    # dictionary to keep the output
+    sentiment_info = {}
+
+    # Convert list of words into sentence
+    sentence = " ".join([str(x) for x in word_list])
+    
+    # Create a SentimentIntensityAnalyzer object.
+    sid_obj = SentimentIntensityAnalyzer()
+ 
+    # polarity_scores method of SentimentIntensityAnalyzer
+    # object gives a sentiment dictionary.
+    # which contains pos, neg, neu, and compound scores.
+    vader_sentiment_dict = sid_obj.polarity_scores(sentence)
+
+    sentiment_info["country_code"] = country_code
+    sentiment_info["pos_per"] = vader_sentiment_dict["pos"] * 100
+    sentiment_info["neg_per"] = vader_sentiment_dict["neg"] * 100
+    sentiment_info["neu_per"] = vader_sentiment_dict["neu"] * 100
+    
+    # decide sentiment as positive, negative and neutral
+    if vader_sentiment_dict['compound'] >= 0.05 :
+        sentiment_info["overall"] = "positive"
+ 
+    elif vader_sentiment_dict['compound'] <= - 0.05 :
+        sentiment_info["overall"] = "negative"
+ 
+    else :
+        sentiment_info["overall"] = "neutral"
+
+    sentiment_info["score"] = sentiment_info["pos_per"] / (sentiment_info["pos_per"] + sentiment_info["neg_per"])
+    
+    return sentiment_info
 
 def display_wordcloud(word_list, country_code):
     wordcloud = WordCloud(width = 1000, height = 1000,
@@ -113,4 +159,40 @@ def display_wordcloud(word_list, country_code):
     plt.axis('off')
     plt.tight_layout(pad = 0)
     plt.title(country_code)
+    plt.show()
+
+def display_pie_chart(pos_per, neg_per, neu_per, overall_sent, sent_score, country_code):
+    #plot pie chart of each countries
+    plt.pie([pos_per, neg_per, neu_per], explode=(0, 0.2, 0.2), labels=["Positive", "Negative", "Neutral"], autopct="%1.1f%%")
+    plt.title(f"Sentiment Analysis of {country_code}\nOverall sentiment = {overall_sent}, Sentiment score = {round(sent_score, 3)}")
+    plt.show()
+
+def plot_freq_vader_comparison(freq_sentiment_info, vader_sentiment_info, country_code):
+    n_groups = 3
+    percentage_freq = [freq_sentiment_info["pos_per"], freq_sentiment_info["neg_per"], freq_sentiment_info["neu_per"]]
+    percentage_vader = [vader_sentiment_info["pos_per"], vader_sentiment_info["neg_per"], vader_sentiment_info["neu_per"]]
+
+    # create plot
+    fig, ax = plt.subplots()
+    index = np.arange(n_groups)
+    bar_width = 0.35
+    opacity = 0.8
+
+    rects1 = plt.bar(index, percentage_freq, bar_width,
+    alpha=opacity,
+    color='b',
+    label='Freq')
+
+    rects2 = plt.bar(index + bar_width, percentage_vader, bar_width,
+    alpha=opacity,
+    color='g',
+    label='Vader')
+
+    plt.xlabel('Word Type')
+    plt.ylabel('Percentage')
+    plt.title(f"Comparison between Freq and Vader for {country_code}\nVader's score = {round(vader_sentiment_info['score'], 3)}, Freq's score = {round(freq_sentiment_info['score'], 3)}\nVader's overall = {vader_sentiment_info['overall']}, Freq's overall = {freq_sentiment_info['overall']}")
+    plt.xticks(index + bar_width, ('Positive', 'Negative', 'Neutral'))
+    plt.legend()
+
+    plt.tight_layout()
     plt.show()
