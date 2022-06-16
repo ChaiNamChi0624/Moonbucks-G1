@@ -30,10 +30,12 @@ class DistributionCenter:
         
         start_from = path.index(self.center_idx) # [0, 1, 2, 3, 4, 0] -> [2, 3, 4, 0, 1, 2]
         self.delivery_route = path[start_from:] + path[0 : start_from + 1]
-        path_dict, self.cost = self.__fetch_delivery_routes_info(distance_mat)
-        self.folium_map = self.__build_map(distance_mat, path_dict)
-
+        self.__path_dict, self.cost = self.__fetch_delivery_routes_info(distance_mat)
+        
     def plot(self):
+        if self.folium_map == None:
+            self.folium_map = self.__build_map(self.__path_dict)
+            del self.__path_dict    # clear this to make this object smaller after building map
         return self.folium_map
 
     def info(self):
@@ -140,7 +142,7 @@ class DistributionCenter:
 
         return path_dict, delivery_cost
 
-    def __build_map(self, distance_mat, path_dict):
+    def __build_map(self, path_dict):
         def construct_address(store_info):
             address = ""
             for i, key in enumerate(("street_address", "zip_code", "city", "country")):

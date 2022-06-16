@@ -193,3 +193,43 @@ def KMPSearch(pat, txt):
                     i += 1
     
     return count, visited
+
+class TrieNode:
+        def __init__(self):
+            self.children = {}
+            self.endOfString = False
+            
+class Trie:    
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insertString(self, word):
+        current = self.root
+        for i in word:
+            ch = i
+            node = current.children.get(ch)
+            if node == None:
+                node = TrieNode()
+                current.children.update({ch:node})
+            current = node
+        current.endOfString = True
+
+    def searchString(self, word):
+        count=0
+        is_word_unfinished = False
+        currentNode = self.root
+        for i in word:
+            node = currentNode.children.get(i)
+            
+            if node == None:
+                is_word_unfinished = True
+                break
+                
+            currentNode = node
+        
+        if is_word_unfinished:
+            count = 0
+        elif currentNode.endOfString == True:
+            count += 1
+
+        return count  

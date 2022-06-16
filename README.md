@@ -9,9 +9,9 @@ A project that analyzes public sentiment of a country and the running cost for d
 
 ## Installation
 
-1. Clone the project from branch 'combined'
+1. Clone the project from a specific branch
 ```sh
-git clone -b combined https://github.com/ChaiNamChi0624/Moonbucks-G1.git
+git clone -b <branch-name> https://github.com/ChaiNamChi0624/Moonbucks-G1.git
 ```
 
 2. Create a conda virtual environment for this project based on 'environment.yml' file
