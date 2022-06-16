@@ -75,33 +75,29 @@ def compute_all_scores(all_info, country_codes):
     
     sortd = OrderedDict(sorted(dlist.items(), key=lambda x: x[1]['result']))
 
-    final_ranking = sortd
+    return sortd
 
+def plot_ranking(final_ranking):
     df = pd.DataFrame(final_ranking)
     N = 5
     ind = np.arange(N)
     width = 0.25
 
     distribution = []
-    total_distance = 0
+    total_distance = df.loc["dist"].sum()
 
-    for i in range(5):
-        temp_dict = df.iloc[i][1]
-        temp_value = temp_dict['dist']
-        total_distance += temp_value
-
-    for i in range(5):
-        temp_dict = df.iloc[i][1]
-        temp_value = temp_dict['dist'] / total_distance
+    for country_code in df:
+        temp_dict = df.loc["dist"]
+        temp_value = temp_dict[country_code] / total_distance
         # print(temp_value)
         distribution.append(temp_value)
 
     bar1 = plt.bar(ind, distribution, width, color='r')
 
     sentiment = []
-    for i in range(5):
-        temp_dict = df.iloc[i][1]
-        temp_value = temp_dict['sent'] 
+    for country_code in df:
+        temp_dict = df.loc["sent"]
+        temp_value = temp_dict[country_code] 
         # print(temp_value)
         sentiment.append(temp_value)
 
@@ -109,9 +105,9 @@ def compute_all_scores(all_info, country_codes):
 
 
     result = []
-    for i in range(5):
-        temp_dict = df.iloc[i][1]
-        temp_value = temp_dict['result'] 
+    for country_code in df:
+        temp_dict = df.loc["result"]
+        temp_value = temp_dict[country_code] 
         # print(temp_value)
         result.append(temp_value)
 
@@ -122,5 +118,5 @@ def compute_all_scores(all_info, country_codes):
     plt.title("Final Ranking")
 
     plt.xticks(ind+width, ['US', 'CN', 'NZ', 'TH', 'AE'])
-    plt.legend((bar1, bar2, bar3), ('Distance', 'Sentiment', 'Result'))
+    plt.legend((bar1, bar2, bar3), ('$\dfrac{Distance}{Total Distance}$', '$Sentiment$', '$Result$'))
     plt.show()
