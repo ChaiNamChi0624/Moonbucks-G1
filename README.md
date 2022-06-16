@@ -9,22 +9,27 @@ A project that analyzes public sentiment of a country and the running cost for d
 
 ## Installation
 
-1. Clone the project from a specific branch
+1. Clone the project from main branch
 ```sh
-git clone -b <branch-name> https://github.com/ChaiNamChi0624/Moonbucks-G1.git
+git clone https://github.com/ChaiNamChi0624/Moonbucks-G1.git
 ```
 
-2. Create a conda virtual environment for this project based on 'environment.yml' file
+2. cd into the project root directory
+```sh
+cd Moonbucks-G1
+```
+
+3. Create a conda virtual environment for this project based on 'environment.yml' file
 ```sh
 conda env create -f environment.yml
 ```
 
-3. Activate the conda virtual environment
+4. Activate the conda virtual environment
 ```sh
 conda activate moonbucks_env
 ```
 
-4. Open up jupyter notebook to run the code
+5. Open up jupyter notebook to run the code
 ```sh
 jupyter notebook
 ```
