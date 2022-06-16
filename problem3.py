@@ -3,7 +3,9 @@ from sentiment_analysis import sentimentAnalysis
 from util import load_dataset, get_country_dict
 from collections import OrderedDict
 import time
-
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 def get_all_info(country_codes):
     total_elapsed_time = 0
@@ -72,4 +74,53 @@ def compute_all_scores(all_info, country_codes):
         )
     
     sortd = OrderedDict(sorted(dlist.items(), key=lambda x: x[1]['result']))
-    return sortd
+
+    final_ranking = sortd
+
+    df = pd.DataFrame(final_ranking)
+    N = 5
+    ind = np.arange(N)
+    width = 0.25
+
+    distribution = []
+    total_distance = 0
+
+    for i in range(5):
+        temp_dict = df.iloc[i][1]
+        temp_value = temp_dict['dist']
+        total_distance += temp_value
+
+    for i in range(5):
+        temp_dict = df.iloc[i][1]
+        temp_value = temp_dict['dist'] / total_distance
+        # print(temp_value)
+        distribution.append(temp_value)
+
+    bar1 = plt.bar(ind, distribution, width, color='r')
+
+    sentiment = []
+    for i in range(5):
+        temp_dict = df.iloc[i][1]
+        temp_value = temp_dict['sent'] 
+        # print(temp_value)
+        sentiment.append(temp_value)
+
+    bar2 = plt.bar(ind+width, sentiment, width, color='g')
+
+
+    result = []
+    for i in range(5):
+        temp_dict = df.iloc[i][1]
+        temp_value = temp_dict['result'] 
+        # print(temp_value)
+        result.append(temp_value)
+
+    bar3 = plt.bar(ind+width*2, result, width, color='b')
+
+    plt.xlabel("Country")
+    plt.ylabel('Scores')
+    plt.title("Final Ranking")
+
+    plt.xticks(ind+width, ['US', 'CN', 'NZ', 'TH', 'AE'])
+    plt.legend((bar1, bar2, bar3), ('Distance', 'Sentiment', 'Result'))
+    plt.show()
